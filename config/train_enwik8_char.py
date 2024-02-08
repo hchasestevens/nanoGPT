@@ -16,7 +16,7 @@ wandb_run_name = 'mini-gpt'
 dataset = 'enwik8_char'
 gradient_accumulation_steps = 5
 batch_size = 64
-block_size = 256 # context of up to 256 previous characters
+block_size = 1024 # context of up to 1024 previous characters
 
 n_layer = 12
 n_head = 12
