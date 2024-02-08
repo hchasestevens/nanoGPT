@@ -29,6 +29,10 @@ from torch.distributed import init_process_group, destroy_process_group
 
 from model import GPTConfig, GPT
 
+# Append the path to LD_LIBRARY_PATH
+os.environ['LD_LIBRARY_PATH'] = f"/usr/lib64-nvidia:{os.environ.get('LD_LIBRARY_PATH', '')}"
+
+
 # -----------------------------------------------------------------------------
 # default config values designed to train a gpt2 (124M) on OpenWebText
 # I/O
