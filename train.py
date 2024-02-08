@@ -29,6 +29,9 @@ from torch.distributed import init_process_group, destroy_process_group
 
 from model import GPTConfig, GPT
 
+import torch._dynamo
+torch._dynamo.config.suppress_errors = True
+
 # Append the path to LD_LIBRARY_PATH
 os.environ['LD_LIBRARY_PATH'] = f"/usr/lib64-nvidia:{os.environ.get('LD_LIBRARY_PATH', '')}"
 os.environ['TORCH_LOGS'] = "+dynamo"
