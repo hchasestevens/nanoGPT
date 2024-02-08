@@ -31,6 +31,8 @@ from model import GPTConfig, GPT
 
 # Append the path to LD_LIBRARY_PATH
 os.environ['LD_LIBRARY_PATH'] = f"/usr/lib64-nvidia:{os.environ.get('LD_LIBRARY_PATH', '')}"
+os.environ['TORCH_LOGS'] = "+dynamo"
+os.environ['TORCHDYNAMO_VERBOSE'] = "1"
 
 
 # -----------------------------------------------------------------------------
