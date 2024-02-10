@@ -34,7 +34,7 @@ class CausalSelfAttention(nn.Module):
         # key, query, value projections for all heads, but in a batch
         self.c_attn = nn.Linear(config.n_embd, 2 * config.n_embd, bias=config.bias)
         # output projection
-        self.c_proj = nn.Linear(config.n_embd, 1, bias=config.bias)
+        self.c_proj = nn.Linear(config.n_embd, config.n_embd, bias=config.bias)
         # regularization
         self.attn_dropout = nn.Dropout(config.dropout)
         self.resid_dropout = nn.Dropout(config.dropout)
@@ -72,8 +72,7 @@ class CausalSelfAttention(nn.Module):
 
         # output projection
         proj = self.c_proj(y)
-        step = torch.heaviside(proj, torch.tensor([0.0]))
-        y = self.resid_dropout(step)
+        y = self.resid_dropout(proj)
         return y
 
 class MLP(nn.Module):
@@ -82,14 +81,15 @@ class MLP(nn.Module):
         super().__init__()
         self.c_fc    = nn.Linear(config.n_embd, 4 * config.n_embd, bias=config.bias)
         self.gelu    = nn.GELU()
-        self.c_proj  = nn.Linear(4 * config.n_embd, config.n_embd, bias=config.bias)
+        self.c_proj  = nn.Linear(4 * config.n_embd, 1, bias=config.bias)
         self.dropout = nn.Dropout(config.dropout)
+        self.thresh = torch.tensor([0.5])
 
     def forward(self, x):
         x = self.c_fc(x)
         x = self.gelu(x)
         x = self.c_proj(x)
-        x = self.dropout(x)
+        x = self.dropout(x.heaviside(self.thresh))
         return x
 
 class Block(nn.Module):
