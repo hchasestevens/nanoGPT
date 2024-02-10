@@ -30,7 +30,7 @@ class CausalSelfAttention(nn.Module):
 
     def __init__(self, config):
         super().__init__()
-        #assert config.n_embd % config.n_head == 0
+        assert config.n_embd % config.n_head == 0
         # key, query, value projections for all heads, but in a batch
         self.c_attn = nn.Linear(config.n_embd, 2 * config.n_embd, bias=config.bias)
         # output projection
@@ -71,8 +71,7 @@ class CausalSelfAttention(nn.Module):
         y = y.transpose(1, 2).contiguous().view(B, T, C) # re-assemble all head outputs side by side
 
         # output projection
-        proj = self.c_proj(y)
-        y = self.resid_dropout(proj)
+        y = self.resid_dropout(self.c_proj(y))
         return y
 
 class MLP(nn.Module):
