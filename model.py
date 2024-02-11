@@ -87,7 +87,7 @@ class MLP(nn.Module):
         x = self.c_fc(x)
         x = self.gelu(x)
         x = self.c_proj(x)
-        x = self.dropout(x.heaviside(0))
+        x = self.dropout(x.heaviside(torch.tensor([0.5], dtype=x.dtype)))
         return x
 
 class Block(nn.Module):
