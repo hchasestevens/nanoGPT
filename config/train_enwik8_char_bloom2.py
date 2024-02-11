@@ -22,7 +22,7 @@ n_layer: int = 12
 n_head: int = 28
 n_embd: int = 28 * 18
 attention_proj_size: int = 28
-mlp_intermediate_size: int = 8 * 28 * 18
+mlp_intermediate_size: int = 6 * 28 * 18
 dropout = 0.1
 
 bias = False
