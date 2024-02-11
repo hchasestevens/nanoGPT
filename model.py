@@ -107,12 +107,12 @@ class Block(nn.Module):
 class GPTConfig:
     block_size: int = 512
     vocab_size: int = 6064 # GPT-2 vocab_size of 50257, padded up to nearest multiple of 64 for efficiency
-    n_layer: int = 14
+    n_layer: int = 12
     n_head: int = 28
     n_embd: int = 28 * 18
     attention_proj_size: int = 28
-    mlp_intermediate_size: int = 4 * 28 * 18
-    dropout: float = 0.0
+    mlp_intermediate_size: int = 8 * 28 * 18
+    dropout: float = 0.1
     bias: bool = True # True: bias in Linears and LayerNorms, like GPT-2. False: a bit better and faster
 
 class GPT(nn.Module):
