@@ -19,10 +19,10 @@ batch_size = 64
 block_size = 512 # context of up to 512 previous characters
 
 n_layer: int = 12
-n_head: int = 32
-n_embd: int = 512
-attention_proj_size: int = 32
-mlp_intermediate_size: int = 4 * 512
+n_head: int = 28
+n_embd: int = 28 * 18
+attention_proj_size: int = 28
+mlp_intermediate_size: int = 4 * 28 * 18
 dropout = 0.1
 
 learning_rate = 6e-4 # with baby networks can afford to go a bit higher
