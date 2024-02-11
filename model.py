@@ -82,13 +82,12 @@ class MLP(nn.Module):
         self.gelu    = nn.GELU()
         self.c_proj  = nn.Linear(4 * config.n_embd, 1, bias=config.bias)
         self.dropout = nn.Dropout(config.dropout)
-        self.thresh = torch.tensor([0.5])
 
     def forward(self, x):
         x = self.c_fc(x)
         x = self.gelu(x)
         x = self.c_proj(x)
-        x = self.dropout(x.heaviside(self.thresh))
+        x = self.dropout(x.heaviside(0))
         return x
 
 class Block(nn.Module):
