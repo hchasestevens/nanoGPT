@@ -42,8 +42,6 @@ class CausalSelfAttention(nn.Module):
         self.flash = hasattr(torch.nn.functional, 'scaled_dot_product_attention')
         self.register_buffer("bias", torch.tril(torch.ones(config.block_size, config.block_size))
                                         .view(1, 1, config.block_size, config.block_size))
-        # Threshold for binarization
-        self.thresh = 0.5
 
     def forward(self, x):
         B, T, C = x.size()
