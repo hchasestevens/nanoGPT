@@ -30,9 +30,9 @@ class CausalSelfAttention(nn.Module):
 
     def __init__(self, config):
         super().__init__()
-        self.c_attn = nn.Linear(config.n_embd, 2 * config.n_embd, bias=config.bias)
+        self.c_attn = nn.Linear(config.n_embd, 2 * config.attention_proj_size, bias=config.bias)
         # output projection
-        self.c_proj = nn.Linear(config.n_embd, config.n_head, bias=config.bias)
+        self.c_proj = nn.Linear(config.attention_proj_size, config.n_embd, bias=config.bias)
         # regularization
         self.attn_dropout = nn.Dropout(config.dropout)
         self.resid_dropout = nn.Dropout(config.dropout)
@@ -76,9 +76,9 @@ class MLP(nn.Module):
 
     def __init__(self, config):
         super().__init__()
-        self.c_fc    = nn.Linear(config.n_head, 4 * config.n_embd, bias=config.bias)  # if this doesn't work, convolve it next.
+        self.c_fc    = nn.Linear(config.n_embd, config.mlp_intermediate_size, bias=config.bias)
         self.gelu    = nn.GELU()
-        self.c_proj  = nn.Linear(4 * config.n_embd, config.n_embd, bias=config.bias)
+        self.c_proj  = nn.Linear(config.mlp_intermediate_size, config.n_embd, bias=config.bias)
         self.dropout = nn.Dropout(config.dropout)
 
     def forward(self, x):
@@ -109,6 +109,8 @@ class GPTConfig:
     n_layer: int = 12
     n_head: int = 12
     n_embd: int = 768
+    attention_proj_size: int = 8
+    mlp_intermediate_size: int = 4 * 8
     dropout: float = 0.0
     bias: bool = True # True: bias in Linears and LayerNorms, like GPT-2. False: a bit better and faster
 
