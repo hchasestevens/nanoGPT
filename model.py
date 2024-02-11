@@ -30,9 +30,10 @@ class CausalSelfAttention(nn.Module):
 
     def __init__(self, config):
         super().__init__()
-        self.c_attn = nn.Linear(config.n_embd, 2 * config.attention_proj_size, bias=config.bias)
+        self.attention_proj_size = config.attention_proj_size
+        self.c_attn = nn.Linear(config.n_embd, 2 * self.attention_proj_size, bias=config.bias)
         # output projection
-        self.c_proj = nn.Linear(config.attention_proj_size, config.n_embd, bias=config.bias)
+        self.c_proj = nn.Linear(self.attention_proj_size, config.n_embd, bias=config.bias)
         # regularization
         self.attn_dropout = nn.Dropout(config.dropout)
         self.resid_dropout = nn.Dropout(config.dropout)
@@ -51,7 +52,7 @@ class CausalSelfAttention(nn.Module):
         B, T, C = x.size() # batch size, sequence length, embedding dimensionality (n_embd)
 
         # calculate query, key, values for all heads in batch and move head forward to be the batch dim
-        q, k  = self.c_attn(x).split(self.n_embd, dim=2)
+        q, k  = self.c_attn(x).split(self.attention_proj_size, dim=2)
         k = k.view(B, T, self.n_head, C // self.n_head).transpose(1, 2) # (B, nh, T, hs)
         q = q.view(B, T, self.n_head, C // self.n_head).transpose(1, 2) # (B, nh, T, hs)
 
