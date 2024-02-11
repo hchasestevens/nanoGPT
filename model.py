@@ -62,17 +62,14 @@ class CausalSelfAttention(nn.Module):
             att = self.attn_dropout(att)
             att = att @ k
 
-        # Convert attention output to binary values based on a threshold
-        # Note: This operation significantly changes the nature of the model's outputs and gradients
-        binary_output = att.mean(dim=-1) > self.thresh
-        binary_output = binary_output.to(torch.float32)  # Convert bool to float
+        # Apply GELU activation to the attention output
+        att_output = F.gelu(att)
 
-        # Expand binary outputs to match the expected dimensionality of c_proj input
-        binary_output_expanded = binary_output.unsqueeze(-1).expand(-1, -1, -1, C // self.n_head)
-        binary_output_expanded = binary_output_expanded.reshape(B, T, self.n_head * (C // self.n_head))
+        # Reshape attention output to match the expected dimensionality for the projection step
+        att_output = att_output.reshape(B, T, C)
 
         # Apply the residual dropout to the binary expanded outputs, then project back to the embedding dimension
-        y = self.resid_dropout(self.c_proj(binary_output_expanded))
+        y = self.resid_dropout(self.c_proj(att_output))
         return y
 
 class MLP(nn.Module):
