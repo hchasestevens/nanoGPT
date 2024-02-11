@@ -30,10 +30,9 @@ class CausalSelfAttention(nn.Module):
 
     def __init__(self, config):
         super().__init__()
-        assert config.n_embd % config.n_head == 0
         self.c_attn = nn.Linear(config.n_embd, 2 * config.n_embd, bias=config.bias)
         # output projection
-        self.c_proj = nn.Linear(config.n_embd, 1, bias=config.bias)
+        self.c_proj = nn.Linear(config.n_embd, config.n_head, bias=config.bias)
         # regularization
         self.attn_dropout = nn.Dropout(config.dropout)
         self.resid_dropout = nn.Dropout(config.dropout)
@@ -77,7 +76,7 @@ class MLP(nn.Module):
 
     def __init__(self, config):
         super().__init__()
-        self.c_fc    = nn.Linear(1, 4 * config.n_embd, bias=config.bias)  # if this doesn't work, convolve it next.
+        self.c_fc    = nn.Linear(config.n_head, 4 * config.n_embd, bias=config.bias)  # if this doesn't work, convolve it next.
         self.gelu    = nn.GELU()
         self.c_proj  = nn.Linear(4 * config.n_embd, config.n_embd, bias=config.bias)
         self.dropout = nn.Dropout(config.dropout)
