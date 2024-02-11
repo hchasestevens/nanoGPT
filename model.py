@@ -52,7 +52,7 @@ class CausalSelfAttention(nn.Module):
         B, T, C = x.size() # batch size, sequence length, embedding dimensionality (n_embd)
 
         # calculate query, key, values for all heads in batch and move head forward to be the batch dim
-        q, k  = self.c_attn(x).split(self.n_embd, dim=2)
+        q, k  = self.c_attn(x).split(self.attention_proj_size, dim=2)
         k = k.view(B, T, self.n_head, C // self.n_head).transpose(1, 2) # (B, nh, T, hs)
         q = q.view(B, T, self.n_head, C // self.n_head).transpose(1, 2) # (B, nh, T, hs)
 
@@ -109,7 +109,7 @@ class GPTConfig:
     vocab_size: int = 6064 # GPT-2 vocab_size of 50257, padded up to nearest multiple of 64 for efficiency
     n_layer: int = 12
     n_head: int = 64
-    n_embd: int = 768
+    n_embd: int = 512
     attention_proj_size: int = 8
     mlp_intermediate_size: int = 4 * 768
     dropout: float = 0.0
