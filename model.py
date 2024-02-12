@@ -110,7 +110,7 @@ class GPTConfig:
     n_layer: int = 32
     n_head: int = 2
     n_embd: int = 512
-    attention_proj_size: int = 512
+    attention_proj_size: int = 128
     mlp_intermediate_size: int = 4 * 512
     dropout: float = 0.05
     bias: bool = True # True: bias in Linears and LayerNorms, like GPT-2. False: a bit better and faster
@@ -177,8 +177,9 @@ class GPT(nn.Module):
         tok_emb = self.transformer.wte(idx) # token embeddings of shape (b, t, n_embd)
         pos_emb = self.transformer.wpe(pos) # position embeddings of shape (t, n_embd)
         x = self.transformer.drop(tok_emb + pos_emb)
-        for block in self.transformer.h:
+        for i, block in enumerate(self.transformer.h):
             x = block(x)
+            # if i % 2 == 0:
             x = self.transformer.drop(x + pos_emb)
         x = self.transformer.ln_f(x)
 

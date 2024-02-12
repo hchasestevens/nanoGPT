@@ -21,7 +21,7 @@ block_size = 512 # context of up to 512 previous characters
 n_layer: int = 32
 n_head: int = 2
 n_embd: int = 512
-attention_proj_size: int = 512
+attention_proj_size: int = 128
 mlp_intermediate_size: int = 4 * 512
 dropout: float = 0.05
 
