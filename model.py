@@ -109,7 +109,7 @@ class GPTConfig:
     vocab_size: int = 6064 # GPT-2 vocab_size of 50257, padded up to nearest multiple of 64 for efficiency
     n_layer: int = 12
     n_head: int = 64
-    n_embd: int = 768
+    n_embd: int = 512
     attention_proj_size: int = 64
     mlp_intermediate_size: int = 4 * 128
     dropout: float = 0.1
