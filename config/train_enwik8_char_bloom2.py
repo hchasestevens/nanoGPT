@@ -15,20 +15,20 @@ wandb_run_name = 'mini-gpt'
 
 dataset = 'enwik8_char'
 gradient_accumulation_steps = 1
-batch_size = 64
+batch_size = 32
 block_size = 512 # context of up to 512 previous characters
 
 n_layer: int = 12
-n_head: int = 28
-n_embd: int = 28 * 18
-attention_proj_size: int = 28
-mlp_intermediate_size: int = 6 * 28 * 18 # working
+n_head: int = 64
+n_embd: int = 128
+attention_proj_size: int = 64
+mlp_intermediate_size: int = 4 * 128
 dropout = 0.1
 
 bias = False
 
 learning_rate = 6e-4 # with baby networks can afford to go a bit higher
-max_iters = 10_000
+max_iters = 20_000
 lr_decay_iters = 10_000 # make equal to max_iters usually
 min_lr = 6e-5 # learning_rate / 10 usually
 weight_decay = 1e-1
