@@ -14,7 +14,7 @@ wandb_project = 'enwik8-char-bloom-2'
 wandb_run_name = 'mini-gpt'
 
 dataset = 'enwik8_char'
-gradient_accumulation_steps = 1
+gradient_accumulation_steps = 8
 batch_size = 64
 block_size = 512 # context of up to 512 previous characters
 
