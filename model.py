@@ -179,6 +179,7 @@ class GPT(nn.Module):
         x = self.transformer.drop(tok_emb + pos_emb)
         for block in self.transformer.h:
             x = block(x)
+            x = self.transformer.drop(x + pos_emb)
         x = self.transformer.ln_f(x)
 
         if targets is not None:
