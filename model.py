@@ -110,7 +110,7 @@ class GPTConfig:
     n_layer: int = 32
     n_head: int = 2
     n_embd: int = 512
-    attention_proj_size: int = 64
+    attention_proj_size: int = 512
     mlp_intermediate_size: int = 4 * 512
     dropout: float = 0.05
     bias: bool = True # True: bias in Linears and LayerNorms, like GPT-2. False: a bit better and faster
