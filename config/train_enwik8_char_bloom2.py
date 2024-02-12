@@ -20,7 +20,7 @@ block_size = 512 # context of up to 512 previous characters
 
 n_layer: int = 12
 n_head: int = 64
-n_embd: int = 256
+n_embd: int = 768
 attention_proj_size: int = 64
 mlp_intermediate_size: int = 4 * 128
 dropout = 0.1
