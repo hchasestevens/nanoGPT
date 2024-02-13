@@ -21,10 +21,10 @@ n_head = 2
 n_embd = 512
 dropout = 0.55
 
-learning_rate = 6e-4 # with baby networks can afford to go a bit higher
-max_iters = 10_000
-lr_decay_iters = 10_000 # make equal to max_iters usually
+learning_rate = 6e-3 # with baby networks can afford to go a bit higher
+max_iters = 20_000
+lr_decay_iters = 20_000 # make equal to max_iters usually
 min_lr = 6e-5 # learning_rate / 10 usually
 weight_decay = 1e-1
 
-warmup_iters = 2000
+warmup_iters = 2500
