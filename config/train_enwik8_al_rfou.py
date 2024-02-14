@@ -17,7 +17,7 @@ batch_size = 32
 block_size = 512 # context of up to 512 previous characters
 
 n_layer = 64
-n_head = 2
+n_head = 4
 n_embd = 512
 dropout = 0.0
 
