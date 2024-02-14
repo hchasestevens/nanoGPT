@@ -19,7 +19,7 @@ block_size = 512 # context of up to 512 previous characters
 n_layer = 64
 n_head = 2
 n_embd = 512
-dropout = 0.55
+dropout = 0.0
 
 learning_rate = 6e-3 # with baby networks can afford to go a bit higher
 max_iters = 20_000
