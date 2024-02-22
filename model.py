@@ -81,7 +81,7 @@ class KVCausalSelfAttention(nn.Module):
         super().__init__()
         self.attention_proj_size = config.attention_proj_size
         self.attn_head_size = config.attn_head_size
-        self.c_attn = nn.Linear(config.n_embd, 2 * self.attention_proj_size, bias=config.bias)
+        self.c_attn = nn.Linear(config.n_embd, 3 * self.attention_proj_size, bias=config.bias)
         # output projection
         self.c_proj = nn.Linear(self.attention_proj_size, self.attn_head_size, bias=config.bias)
         # regularization
@@ -102,12 +102,13 @@ class KVCausalSelfAttention(nn.Module):
         B, T, C = x.size() # batch size, sequence length, embedding dimensionality (n_embd)
 
         # calculate query, key, values for all heads in batch and move head forward to be the batch dim
-        q, k = self.c_attn(x).split(self.attention_proj_size, dim=2)
+        q, k, v = self.c_attn(x).split(self.attention_proj_size, dim=2)
         k = k.view(B, T, self.n_head, self.attention_proj_size // self.n_head).transpose(1, 2) # (B, nh, T, hs)
         q = q.view(B, T, self.n_head, self.attention_proj_size // self.n_head).transpose(1, 2) # (B, nh, T, hs)
+        v = v.view(B, T, self.n_head, self.attention_proj_size // self.n_head).transpose(1, 2)
 
         # causal self-attention; Self-attend: (B, nh, T, hs) x (B, nh, hs, T) -> (B, nh, T, T)
-        y = torch.nn.functional.scaled_dot_product_attention(q, k, k, attn_mask=None, dropout_p=self.dropout if self.training else 0, is_causal=True)
+        y = torch.nn.functional.scaled_dot_product_attention(q, k, v, attn_mask=None, dropout_p=self.dropout if self.training else 0, is_causal=True)
         y = y.transpose(1, 2).contiguous().view(B, T, self.attention_proj_size) # re-assemble all head outputs side by side
 
         # output projection
