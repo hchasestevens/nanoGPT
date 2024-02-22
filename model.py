@@ -126,9 +126,12 @@ class GPT(nn.Module):
             h = nn.ModuleList([CausalSelfAttention(config) for _ in range(config.n_layer)]),
             ln_f = LayerNorm(config.causal_self_attn_size * config.n_layer, bias=config.bias),
         ))
-        self.lm = nn.Linear(config.causal_self_attn_size * config.n_layer, config.mlp_intermediate_size, bias=True)
-        self.gelu = nn.GELU()
-        self.ln_mn = LayerNorm(config.mlp_intermediate_size, bias=config.bias)
+        self.lm0 = nn.Linear(config.causal_self_attn_size * config.n_layer, config.mlp_intermediate_size, bias=True)
+        self.gelu0 = nn.GELU()
+        self.ln_mn0 = LayerNorm(config.mlp_intermediate_size, bias=config.bias)
+        self.lm1 = nn.Linear(config.mlp_intermediate_size, config.mlp_intermediate_size, bias=True)
+        self.gelu1 = nn.GELU()
+        self.ln_mn1 = LayerNorm(config.mlp_intermediate_size, bias=config.bias)
         self.lm_head = nn.Linear(config.mlp_intermediate_size, config.vocab_size, bias=True)
         # with weight tying when using torch.compile() some warnings get generated:
         # "UserWarning: functional_call was passed multiple values for tied weights.
@@ -178,9 +181,12 @@ class GPT(nn.Module):
         x = self.transformer.drop(self.transformer.ln(tok_emb + pos_emb))
         x = torch.cat([block(x) for block in self.transformer.h], dim=-1)
         x = self.transformer.ln_f(x)
-        x = self.lm(x)
-        x = self.gelu(x)
-        x = self.ln_mn(x)
+        x = self.lm0(x)
+        x = self.gelu0(x)
+        x = self.ln_mn0(x)
+        x = self.lm1(x)
+        x = self.gelu1(x)
+        x = self.ln_mn1(x)
 
         if targets is not None:
             # if we are given some desired targets also calculate the loss
