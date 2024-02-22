@@ -40,7 +40,6 @@ class LSHSelfAttention(nn.Module):
         self.n_embd = config.n_embd
         self.resid_dropout = nn.Dropout(config.dropout)
 
-        # This is a simplification, real implementation might need more sophisticated handling
         self.register_buffer("random_rotations", torch.randn(config.n_head, config.n_embd // config.n_head, config.n_embd // config.n_head))
 
     def hash_vectors(self, vectors, num_buckets: int):

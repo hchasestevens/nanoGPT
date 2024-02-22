@@ -16,7 +16,7 @@ gradient_accumulation_steps = 2
 batch_size = 32
 block_size = 512 # context of up to 512 previous characters
 
-n_layer = 64
+n_layer = 12
 n_head = 4
 n_embd = 512
 dropout = 0.0
