@@ -15,11 +15,11 @@ wandb_run_name = 'mini-gpt'
 
 dataset = 'enwik8_char'
 gradient_accumulation_steps = 1
-batch_size = 64
+batch_size = 128
 block_size = 512 # context of up to 512 previous characters
 
-n_layer: int = 256
-n_head: int = 2
+n_layer: int = 512
+n_head: int = 4
 n_embd: int = 512
 attention_proj_size: int = 32
 causal_self_attn_size: int = 1
