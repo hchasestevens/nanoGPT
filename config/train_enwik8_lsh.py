@@ -16,15 +16,15 @@ gradient_accumulation_steps = 2
 batch_size = 32
 block_size = 512 # context of up to 512 previous characters
 
-n_layer = 12
+n_layer = 32
 n_head = 4
-n_embd = 512
+n_embd = 256
 dropout = 0.0
 
-learning_rate = 6e-3 # with baby networks can afford to go a bit higher
-max_iters = 20_000
-lr_decay_iters = 20_000 # make equal to max_iters usually
-min_lr = 6e-5 # learning_rate / 10 usually
+learning_rate = 3e-4 # with baby networks can afford to go a bit higher
+max_iters = 10_000
+lr_decay_iters = 10_000 # make equal to max_iters usually
+min_lr = 3e-5 # learning_rate / 10 usually
 weight_decay = 1e-1
 
 warmup_iters = 2500
