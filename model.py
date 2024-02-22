@@ -224,7 +224,7 @@ class GPT(nn.Module):
         pos_emb = self.transformer.wpe(pos) # position embeddings of shape (t, n_embd)
         x = self.transformer.drop(tok_emb + pos_emb)
         x = torch.cat([block(x) for block in self.transformer.h], dim=-1)
-        print("SIZE B4": x.size())
+        print("SIZE B4", x.size())
         for block in self.transformer.h:
             x = block(x) + pos_emb
         x = self.transformer.ln_f(x)
