@@ -31,9 +31,10 @@ class CausalSelfAttention(nn.Module):
     def __init__(self, config):
         super().__init__()
         self.attention_proj_size = config.attention_proj_size
+        self.causal_self_attn_size = config.causal_self_attn_size
         self.c_attn = nn.Linear(config.n_embd, 2 * self.attention_proj_size, bias=config.bias)
         # output projection
-        self.c_proj = nn.Linear(self.attention_proj_size, config.n_embd, bias=config.bias)
+        self.c_proj = nn.Linear(self.attention_proj_size, self.causal_self_attn_size, bias=config.bias)
         # regularization
         self.attn_dropout = nn.Dropout(config.dropout)
         self.resid_dropout = nn.Dropout(config.dropout)
@@ -57,16 +58,7 @@ class CausalSelfAttention(nn.Module):
         q = q.view(B, T, self.n_head, self.attention_proj_size // self.n_head).transpose(1, 2) # (B, nh, T, hs)
 
         # causal self-attention; Self-attend: (B, nh, T, hs) x (B, nh, hs, T) -> (B, nh, T, T)
-        if self.flash:
-            # efficient attention using Flash Attention CUDA kernels
-            y = torch.nn.functional.scaled_dot_product_attention(q, k, k, attn_mask=None, dropout_p=self.dropout if self.training else 0, is_causal=True)
-        else:
-            # manual implementation of attention
-            att = (q @ k.transpose(-2, -1)) * (1.0 / math.sqrt(k.size(-1)))
-            att = att.masked_fill(self.bias[:,:,:T,:T] == 0, float('-inf'))
-            att = F.softmax(att, dim=-1)
-            att = self.attn_dropout(att)
-            y = att @ k # (B, nh, T, T) x (B, nh, T, hs) -> (B, nh, T, hs)
+        y = torch.nn.functional.scaled_dot_product_attention(q, k, k, attn_mask=None, dropout_p=self.dropout if self.training else 0, is_causal=True)
         y = y.transpose(1, 2).contiguous().view(B, T, self.attention_proj_size) # re-assemble all head outputs side by side
 
         # output projection
@@ -107,13 +99,14 @@ class Block(nn.Module):
 class GPTConfig:
     block_size: int = 512
     vocab_size: int = 6064 # GPT-2 vocab_size of 50257, padded up to nearest multiple of 64 for efficiency
-    n_layer: int = 32
+    n_layer: int = 256
     n_head: int = 2
     n_embd: int = 512
-    attention_proj_size: int = 64
+    attention_proj_size: int = 32
+    causal_self_attn_size: int = 1
     mlp_intermediate_size: int = 4 * 512
-    dropout: float = 0.05
-    bias: bool = True # True: bias in Linears and LayerNorms, like GPT-2. False: a bit better and faster
+    dropout: float = 0.01
+    bias: bool = False # True: bias in Linears and LayerNorms, like GPT-2. False: a bit better and faster
 
 class GPT(nn.Module):
 
@@ -124,18 +117,22 @@ class GPT(nn.Module):
         self.config = config
 
         self.transformer = nn.ModuleDict(dict(
+            ln = LayerNorm(config.n_embd, bias=config.bias),
             wte = nn.Embedding(config.vocab_size, config.n_embd),
             wpe = nn.Embedding(config.block_size, config.n_embd),
             drop = nn.Dropout(config.dropout),
-            h = nn.ModuleList([Block(config) for _ in range(config.n_layer)]),
-            ln_f = LayerNorm(config.n_embd, bias=config.bias),
+            h = nn.ModuleList([CausalSelfAttention(config) for _ in range(config.n_layer)]),
+            ln_f = LayerNorm(config.causal_self_attn_size * config.n_layer, bias=config.bias),
         ))
-        self.lm_head = nn.Linear(config.n_embd, config.vocab_size, bias=False)
+        self.lm = nn.Linear(config.causal_self_attn_size * config.n_layer, config.mlp_intermediate_size, bias=True)
+        self.gelu = nn.GELU()
+        self.ln_mn = LayerNorm(config.mlp_intermediate_size)
+        self.lm_head = nn.Linear(config.mlp_intermediate_size, config.vocab_size, bias=True)
         # with weight tying when using torch.compile() some warnings get generated:
         # "UserWarning: functional_call was passed multiple values for tied weights.
         # This behavior is deprecated and will be an error in future versions"
         # not 100% sure what this is, so far seems to be harmless. TODO investigate
-        self.transformer.wte.weight = self.lm_head.weight # https://paperswithcode.com/method/weight-tying
+        #self.transformer.wte.weight = self.lm_head.weight # https://paperswithcode.com/method/weight-tying
 
         # init all weights
         self.apply(self._init_weights)
@@ -176,11 +173,12 @@ class GPT(nn.Module):
         # forward the GPT model itself
         tok_emb = self.transformer.wte(idx) # token embeddings of shape (b, t, n_embd)
         pos_emb = self.transformer.wpe(pos) # position embeddings of shape (t, n_embd)
-        x = self.transformer.drop(tok_emb + pos_emb)
-        for block in self.transformer.h:
-            x = block(x)
-            x = self.transformer.drop(x + pos_emb)
+        x = self.transformer.drop(self.transformer.ln(tok_emb + pos_emb))
+        x = torch.cat([block(x) for block in self.transformer.h], dim=-1)
         x = self.transformer.ln_f(x)
+        x = self.lm(x)
+        x = self.gelu(x)
+        x = self.ln_mn(x)
 
         if targets is not None:
             # if we are given some desired targets also calculate the loss
