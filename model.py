@@ -222,7 +222,7 @@ class GPT(nn.Module):
         # forward the GPT model itself
         tok_emb = self.transformer.wte(idx) # token embeddings of shape (b, t, n_embd)
         pos_emb = self.transformer.wpe(pos) # position embeddings of shape (t, n_embd)
-        x = self.transformer.drop(self.transformer.ln(tok_emb + pos_emb))
+        x = self.transformer.drop(tok_emb + pos_emb)
         x = torch.cat([block(x) for block in self.transformer.h], dim=-1)
         for block in self.transformer.h:
             x = block(x) + pos_emb
