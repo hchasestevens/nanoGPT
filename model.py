@@ -174,7 +174,7 @@ class GPT(nn.Module):
             drop = nn.Dropout(config.dropout),
             h0 = nn.ModuleList([KVCausalSelfAttention(config) for _ in range(config.n_kv)]),
             h = nn.ModuleList([CausalSelfAttention(config) for _ in range(config.n_layer)]),
-            ln_f = LayerNorm(config.causal_self_attn_size * config.n_layer, bias=config.bias),
+            ln_f = LayerNorm(config.n_embd, bias=config.bias),
         ))
         self.lm_head = nn.Linear(config.mlp_intermediate_size, config.vocab_size, bias=True)
         # with weight tying when using torch.compile() some warnings get generated:
