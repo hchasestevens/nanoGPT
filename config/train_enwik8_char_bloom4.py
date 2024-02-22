@@ -19,7 +19,7 @@ batch_size = 32
 block_size = 512 # context of up to 512 previous characters
 
 n_kv: int = 256
-n_layer: int = 32
+n_layer: int = 6
 n_head: int = 2
 n_embd: int = 512
 attention_proj_size: int = 32
