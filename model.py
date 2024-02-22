@@ -80,7 +80,6 @@ class KVCausalSelfAttention(nn.Module):
     def __init__(self, config):
         super().__init__()
         self.attention_proj_size = config.attention_proj_size
-        self.causal_self_attn_size = config.causal_self_attn_size
         self.c_attn = nn.Linear(config.n_embd, 2 * self.attention_proj_size, bias=config.bias)
         # output projection
         self.c_proj = nn.Linear(self.attention_proj_size, self.attn_head_size, bias=config.bias)
