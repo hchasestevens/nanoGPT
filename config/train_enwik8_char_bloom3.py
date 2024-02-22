@@ -18,11 +18,12 @@ gradient_accumulation_steps = 1
 batch_size = 32
 block_size = 512 # context of up to 512 previous characters
 
-n_layer: int = 512
-n_head: int = 4
+n_kv: int = 256
+n_layer: int = 32
+n_head: int = 2
 n_embd: int = 512
 attention_proj_size: int = 32
-causal_self_attn_size: int = 1
+attn_head_size: int = 1
 mlp_intermediate_size: int = 4 * 512
 dropout: float = 0.01
 
