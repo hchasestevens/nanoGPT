@@ -18,7 +18,7 @@ gradient_accumulation_steps = 1
 batch_size = 32
 block_size = 512 # context of up to 512 previous characters
 
-n_kv: int = 64
+n_kv: int = 32
 n_layer: int = 12
 n_head: int = 4
 n_embd: int = 512
