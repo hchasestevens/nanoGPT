@@ -154,7 +154,7 @@ class GPTConfig:
     n_head: int = 4
     n_embd: int = 512
     attention_proj_size: int = 512
-    attn_head_size: int = n_embd // n_kv
+    attn_head_size: int = n_embd
     mlp_intermediate_size: int = 4 * 512
     dropout: float = 0.01
 
@@ -223,7 +223,8 @@ class GPT(nn.Module):
         tok_emb = self.transformer.wte(idx) # token embeddings of shape (b, t, n_embd)
         pos_emb = self.transformer.wpe(pos) # position embeddings of shape (t, n_embd)
         x = self.transformer.drop(tok_emb + pos_emb)
-        x = torch.cat([block(x) for block in self.transformer.h0], dim=-1)
+        x = torch.stack([block(x) for block in self.transformer.h0], dim=0)
+        x = torch.sum(x, dim=0)
         for block in self.transformer.h:
             x = block(x) + pos_emb
         x = self.transformer.ln_f(x)
