@@ -26,54 +26,63 @@ class LayerNorm(nn.Module):
     def forward(self, input):
         return F.layer_norm(input, self.weight.shape, self.weight, self.bias, 1e-5)
 
-class CausalSelfAttention(nn.Module):
-
-    def __init__(self, config): 
+class LSHSelfAttention(nn.Module):
+    def __init__(self, config):
         super().__init__()
         assert config.n_embd % config.n_head == 0
-        # key, query, value projections for all heads, but in a batch
-        self.c_attn = nn.Linear(config.n_embd, 3 * config.n_embd, bias=config.bias)
-        # output projection
-        self.c_proj = nn.Linear(config.n_embd, config.n_embd, bias=config.bias)
-        # regularization
-        self.attn_dropout = nn.Dropout(config.dropout)
-        self.resid_dropout = nn.Dropout(config.dropout)
+        self.key = nn.Linear(config.n_embd, config.n_embd)
+        self.query = nn.Linear(config.n_embd, config.n_embd)
+        self.value = nn.Linear(config.n_embd, config.n_embd)
+        self.n_hashes = 8
+        self.bucket_size = 64
         self.n_head = config.n_head
         self.n_embd = config.n_embd
-        self.dropout = config.dropout
-        # flash attention make GPU go brrrrr but support is only in PyTorch >= 2.0
-        self.flash = hasattr(torch.nn.functional, 'scaled_dot_product_attention')
-        if not self.flash:
-            print("WARNING: using slow attention. Flash Attention requires PyTorch >= 2.0")
-            # causal mask to ensure that attention is only applied to the left in the input sequence
-            self.register_buffer("bias", torch.tril(torch.ones(config.block_size, config.block_size))
-                                        .view(1, 1, config.block_size, config.block_size))
+        self.resid_dropout = nn.Dropout(config.dropout)
+
+        # This is a simplification, real implementation might need more sophisticated handling
+        self.register_buffer("random_rotations", torch.randn(config.n_head, config.n_embd // config.n_head, config.n_embd // config.n_head))
+
+    def hash_vectors(self, vectors, num_buckets: int):
+        # Compute hash for each vector using random rotations and taking the argmax
+        rotated_vecs = torch.einsum('bthd,hd->bthd', vectors, self.random_rotations)
+        return torch.argmax(rotated_vecs, dim=-1) % num_buckets
 
     def forward(self, x):
-        B, T, C = x.size() # batch size, sequence length, embedding dimensionality (n_embd)
+        B, T, C = x.size()
 
-        # calculate query, key, values for all heads in batch and move head forward to be the batch dim
-        q, k, v  = self.c_attn(x).split(self.n_embd, dim=2)
-        k = k.view(B, T, self.n_head, C // self.n_head).transpose(1, 2) # (B, nh, T, hs)
-        q = q.view(B, T, self.n_head, C // self.n_head).transpose(1, 2) # (B, nh, T, hs)
-        v = v.view(B, T, self.n_head, C // self.n_head).transpose(1, 2) # (B, nh, T, hs)
+        # Split the embedding dimension across the heads for multi-head attention
+        keys = self.key(x).view(B, T, self.n_head, C // self.n_head)
+        queries = self.query(x).view(B, T, self.n_head, C // self.n_head)
+        values = self.value(x).view(B, T, self.n_head, C // self.n_head)
 
-        # causal self-attention; Self-attend: (B, nh, T, hs) x (B, nh, hs, T) -> (B, nh, T, T)
-        if self.flash:
-            # efficient attention using Flash Attention CUDA kernels
-            y = torch.nn.functional.scaled_dot_product_attention(q, k, v, attn_mask=None, dropout_p=self.dropout if self.training else 0, is_causal=True)
-        else:
-            # manual implementation of attention
-            att = (q @ k.transpose(-2, -1)) * (1.0 / math.sqrt(k.size(-1)))
-            att = att.masked_fill(self.bias[:,:,:T,:T] == 0, float('-inf'))
-            att = F.softmax(att, dim=-1)
-            att = self.attn_dropout(att)
-            y = att @ v # (B, nh, T, T) x (B, nh, T, hs) -> (B, nh, T, hs)
-        y = y.transpose(1, 2).contiguous().view(B, T, C) # re-assemble all head outputs side by side
+        # Hash keys and queries to buckets
+        num_buckets = T // self.bucket_size + (T % self.bucket_size > 0)
+        bucket_ids_k = self.hash_vectors(keys, num_buckets)
+        bucket_ids_q = self.hash_vectors(queries, num_buckets)
 
-        # output projection
-        y = self.resid_dropout(self.c_proj(y))
-        return y
+        # For simplicity, we assume buckets are pre-sorted. In practice, sort bucket_ids and accordingly keys, queries, values
+        # This example does not implement sorting for brevity
+        # keys, queries, values, and bucket_ids would be sorted here based on bucket_ids
+
+        # Compute attention only within buckets
+        attn_outputs = torch.zeros_like(values)
+        for i in range(num_buckets):
+            # Masking out-of-bucket items
+            mask = (bucket_ids_q == i).unsqueeze(-1).expand_as(queries)
+            masked_keys = keys.masked_fill(~mask, 0)
+            masked_values = values.masked_fill(~mask, 0)
+
+            # Scaled dot-product attention within each bucket
+            scores = torch.einsum('bthd,bThd->bhtT', queries, masked_keys) * (1.0 / math.sqrt(self.n_embd // self.n_head))
+            attn_weights = F.softmax(scores, dim=-1)
+            attn_output = torch.einsum('bhtT,bThd->bthd', attn_weights, masked_values)
+
+            # Combine outputs from all buckets
+            attn_outputs += attn_output
+
+        # Merge heads
+        attn_outputs = attn_outputs.contiguous().view(B, T, C)
+        return self.resid_dropout(attn_outputs)
 
 class MLP(nn.Module):
 
@@ -96,7 +105,7 @@ class Block(nn.Module):
     def __init__(self, config):
         super().__init__()
         self.ln_1 = LayerNorm(config.n_embd, bias=config.bias)
-        self.attn = CausalSelfAttention(config)
+        self.attn = LSHSelfAttention(config)
         self.ln_2 = LayerNorm(config.n_embd, bias=config.bias)
         self.mlp = MLP(config)
 
