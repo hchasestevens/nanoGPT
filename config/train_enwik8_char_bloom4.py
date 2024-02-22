@@ -23,7 +23,7 @@ n_layer: int = 32
 n_head: int = 2
 n_embd: int = 512
 attention_proj_size: int = 32
-attn_head_size: int = 1
+attn_head_size: int = 2
 mlp_intermediate_size: int = 4 * 512
 dropout: float = 0.01
 
