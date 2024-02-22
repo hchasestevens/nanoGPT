@@ -12,11 +12,11 @@ always_save_checkpoint = False
 wandb_log = False # override via command line if you like
 
 dataset = 'enwik8_char'
-gradient_accumulation_steps = 2
+gradient_accumulation_steps = 1
 batch_size = 32
 block_size = 512 # context of up to 512 previous characters
 
-n_layer = 32
+n_layer = 48
 n_head = 4
 n_embd = 256
 dropout = 0.0
