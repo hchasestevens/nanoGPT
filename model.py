@@ -26,6 +26,7 @@ class LayerNorm(nn.Module):
     def forward(self, input):
         return F.layer_norm(input, self.weight.shape, self.weight, self.bias, 1e-5)
 
+
 class LSHSelfAttention(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -44,7 +45,7 @@ class LSHSelfAttention(nn.Module):
 
     def hash_vectors(self, vectors, num_buckets: int):
         # Compute hash for each vector using random rotations and taking the argmax
-        rotated_vecs = torch.einsum('bthd,hd->bthd', vectors, self.random_rotations)
+        rotated_vecs = torch.einsum('bthd,hdd->bthd', vectors, self.random_rotations)
         return torch.argmax(rotated_vecs, dim=-1) % num_buckets
 
     def forward(self, x):
@@ -55,34 +56,37 @@ class LSHSelfAttention(nn.Module):
         queries = self.query(x).view(B, T, self.n_head, C // self.n_head)
         values = self.value(x).view(B, T, self.n_head, C // self.n_head)
 
-        # Hash keys and queries to buckets
+        # Determine the number of buckets
         num_buckets = T // self.bucket_size + (T % self.bucket_size > 0)
         bucket_ids_k = self.hash_vectors(keys, num_buckets)
         bucket_ids_q = self.hash_vectors(queries, num_buckets)
 
-        # For simplicity, we assume buckets are pre-sorted. In practice, sort bucket_ids and accordingly keys, queries, values
-        # This example does not implement sorting for brevity
-        # keys, queries, values, and bucket_ids would be sorted here based on bucket_ids
-
-        # Compute attention only within buckets
+        # Initialize output tensor
         attn_outputs = torch.zeros_like(values)
-        for i in range(num_buckets):
-            # Masking out-of-bucket items
-            mask = (bucket_ids_q == i).unsqueeze(-1).expand_as(queries)
-            masked_keys = keys.masked_fill(~mask, 0)
-            masked_values = values.masked_fill(~mask, 0)
 
-            # Scaled dot-product attention within each bucket
-            scores = torch.einsum('bthd,bThd->bhtT', queries, masked_keys) * (1.0 / math.sqrt(self.n_embd // self.n_head))
+        # Process each bucket
+        for bucket_id in range(num_buckets):
+            # Identify keys and queries in the same bucket
+            bucket_mask_k = bucket_ids_k == bucket_id
+            bucket_mask_q = bucket_ids_q == bucket_id
+
+            # Apply masks to keys, queries, and values
+            keys_bucket = keys * bucket_mask_k.unsqueeze(-1)
+            queries_bucket = queries * bucket_mask_q.unsqueeze(-1)
+            values_bucket = values * bucket_mask_k.unsqueeze(-1)  # Use keys mask for values to align with masked keys
+
+            # Scaled dot-product attention within the bucket
+            scores = torch.einsum('bthd,bThd->bhtT', queries_bucket, keys_bucket) * (1.0 / math.sqrt(C // self.n_head))
             attn_weights = F.softmax(scores, dim=-1)
-            attn_output = torch.einsum('bhtT,bThd->bthd', attn_weights, masked_values)
+            attn_output = torch.einsum('bhtT,bThd->bthd', attn_weights, values_bucket)
 
-            # Combine outputs from all buckets
+            # Update attn_outputs with attention output from current bucket
             attn_outputs += attn_output
 
-        # Merge heads
+        # Merge heads and apply residual dropout
         attn_outputs = attn_outputs.contiguous().view(B, T, C)
         return self.resid_dropout(attn_outputs)
+
 
 class MLP(nn.Module):
 
