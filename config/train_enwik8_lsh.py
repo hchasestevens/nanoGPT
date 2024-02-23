@@ -13,7 +13,7 @@ wandb_log = False # override via command line if you like
 
 dataset = 'enwik8_char'
 gradient_accumulation_steps = 2
-batch_size = 32
+batch_size = 16
 block_size = 512 # context of up to 512 previous characters
 
 n_layer = 32
